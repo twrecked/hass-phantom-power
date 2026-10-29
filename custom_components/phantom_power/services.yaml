@@ -1,0 +1,27 @@
+# Describes the available Phantom Power services
+
+reload:
+  name: Reload Phantom Power
+  description: Reloads the Phantom Power YAML configuration file and updates all power, group, and energy sensors.
+
+reset_energy:
+  name: Reset Energy
+  description: Resets the accumulated kWh of one or more Phantom Energy sensors to zero or a specified value.
+  target:
+    entity:
+      integration: phantom_power
+      domain: sensor
+  fields:
+    value:
+      name: Reset Value
+      description: Value (in kWh) to set the energy accumulator to. Defaults to 0.0.
+      required: false
+      example: 0.0
+      default: 0.0
+      selector:
+        number:
+          min: 0.0
+          max: 1000000.0
+          step: 0.001
+          unit_of_measurement: "kWh"
+          mode: box

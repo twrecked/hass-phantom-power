@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phantom Power Editor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+</head>
+<body>
+{% raw %}
+  <div id="app" v-cloak>
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="nav-brand">
+        <h1>⚡ Phantom Power Editor</h1>
+        <span class="nav-badge">{{ groupName }}</span>
+      </div>
+      <div class="nav-actions">
+        <button class="btn btn-secondary" @click="activeTab = 'yaml'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          View YAML
+        </button>
+        <button v-if="callbackUrl" class="btn btn-success" :disabled="isSaving" @click="saveAndReturn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          {{ isSaving ? 'Saving...' : 'Save & Sync to Home Assistant' }}
+        </button>
+        <button v-else class="btn btn-success" @click="downloadYaml">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download YAML
+        </button>
+      </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <nav class="tabs-container">
+      <button class="tab-btn" :class="{ active: activeTab === 'available' }" @click="activeTab = 'available'">
+        ⚡ Available HA Devices
+        <span class="tab-badge">{{ candidateEntities.length }}</span>
+      </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'power' }" @click="activeTab = 'power'">
+        🔌 Power Sensors
+        <span class="tab-badge">{{ powerSensors.length }}</span>
+      </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'groups' }" @click="activeTab = 'groups'">
+        🗂️ Power Groups
+        <span class="tab-badge">{{ groupSensors.length }}</span>
+      </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'energy' }" @click="activeTab = 'energy'">
+        📈 Energy Sensors
+        <span class="tab-badge">{{ energySensors.length }}</span>
+      </button>
+      <button class="tab-btn" :class="{ active: activeTab === 'yaml' }" @click="activeTab = 'yaml'">
+        📝 Raw YAML
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- TAB 1: Available HA Devices -->
+      <section v-if="activeTab === 'available'">
+        <div class="toolbar">
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" v-model="searchQuery" placeholder="Search devices by name or entity_id...">
+          </div>
+          <div class="filter-pills">
+            <button class="pill-btn" :class="{ active: filterDomain === 'all' }" @click="filterDomain = 'all'">All</button>
+            <button class="pill-btn" :class="{ active: filterDomain === 'light' }" @click="filterDomain = 'light'">💡 Lights</button>
+            <button class="pill-btn" :class="{ active: filterDomain === 'switch' }" @click="filterDomain = 'switch'">🔌 Switches</button>
+            <button class="pill-btn" :class="{ active: filterDomain === 'climate' }" @click="filterDomain = 'climate'">🌡️ Climate</button>
+            <button class="pill-btn" :class="{ active: filterDomain === 'fan' }" @click="filterDomain = 'fan'">🌀 Fans</button>
+            <button class="pill-btn" :class="{ active: filterDomain === 'media_player' }" @click="filterDomain = 'media_player'">📺 Media</button>
+          </div>
+        </div>
+
+        <div v-if="filteredCandidates.length === 0" class="empty-state">
+          <h3>No matching devices found</h3>
+          <p v-if="candidateEntities.length === 0">No candidate entities were supplied from Home Assistant. You can add power sensors manually in the Power Sensors tab.</p>
+          <p v-else>Try clearing or modifying your search filter.</p>
+        </div>
+
+        <div v-else class="cards-grid">
+          <div v-for="ent in filteredCandidates" :key="ent.entity_id" class="card" :class="{ 'is-tracked': isEntityTracked(ent.entity_id) }">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-icon" :class="ent.domain">
+                  <span v-if="ent.domain === 'light'">💡</span>
+                  <span v-else-if="ent.domain === 'switch'">🔌</span>
+                  <span v-else-if="ent.domain === 'climate'">🌡️</span>
+                  <span v-else-if="ent.domain === 'fan'">🌀</span>
+                  <span v-else-if="ent.domain === 'media_player'">📺</span>
+                  <span v-else>⚙️</span>
+                </div>
+                <div>
+                  <div class="card-title">{{ ent.name }}</div>
+                  <div class="card-subtitle">{{ ent.entity_id }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-badges">
+              <span class="badge badge-info">{{ ent.domain }}</span>
+              <span v-if="ent.is_dimmable" class="badge badge-warning">Dimmable / Scalable</span>
+              <span v-if="ent.domain === 'climate'" class="badge badge-warning">Multi-State / Climate</span>
+              <span v-if="isEntityTracked(ent.entity_id)" class="badge badge-success">✓ Tracked: {{ getTrackedWattage(ent.entity_id) }}</span>
+            </div>
+
+            <div class="card-footer">
+              <button v-if="isEntityTracked(ent.entity_id)" class="btn btn-secondary btn-sm" @click="editTrackedEntity(ent.entity_id)">
+                Edit Power Settings
+              </button>
+              <button v-else class="btn btn-primary btn-sm" @click="openTrackModal(ent)">
+                + Add Power & Energy
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: Configured Power Sensors -->
+      <section v-if="activeTab === 'power'">
+        <div class="toolbar">
+          <h2>Configured Power Sensors ({{ powerSensors.length }})</h2>
+          <button class="btn btn-primary btn-sm" @click="openManualPowerModal">
+            + New Custom Power Sensor
+          </button>
+        </div>
+
+        <div v-if="powerSensors.length === 0" class="empty-state">
+          <h3>No power sensors configured</h3>
+          <p>Go to the <strong>Available HA Devices</strong> tab to quickly add power tracking to your lights and switches.</p>
+        </div>
+
+        <div v-else class="cards-grid">
+          <div v-for="(ps, idx) in powerSensors" :key="idx" class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-icon light">⚡</div>
+                <div>
+                  <div class="card-title">{{ ps.name }}</div>
+                  <div class="card-subtitle">{{ ps.entity_id }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-badges" v-if="ps.states && ps.states.length > 0">
+              <span class="badge badge-warning">🎛️ {{ ps.states.length }} State Rules</span>
+              <span v-if="ps.variance" class="badge badge-info">±{{ ps.variance }}W Variance</span>
+            </div>
+
+            <div class="card-body">
+              <template v-if="ps.states && ps.states.length > 0">
+                <div class="card-metric">
+                  <span>Configuration Mode:</span>
+                  <span class="metric-val">State & Attribute Rules</span>
+                </div>
+                <div class="card-metric" v-if="ps.standby_power !== undefined">
+                  <span>Fallback / Standby:</span>
+                  <span class="metric-val">{{ ps.standby_power }} W</span>
+                </div>
+              </template>
+              <template v-else>
+                <div class="card-metric">
+                  <span>Rated Power:</span>
+                  <span class="metric-val">{{ ps.power }} W</span>
+                </div>
+                <div class="card-metric" v-if="ps.min_power">
+                  <span>Dimmed Min:</span>
+                  <span class="metric-val">{{ ps.min_power }} W</span>
+                </div>
+                <div class="card-metric" v-if="ps.standby_power">
+                  <span>Standby Draw:</span>
+                  <span class="metric-val">{{ ps.standby_power }} W</span>
+                </div>
+              </template>
+              <div class="card-metric">
+                <span>Device Registry Link:</span>
+                <span class="metric-val">{{ ps.link_device !== false ? 'Enabled' : 'Disabled' }}</span>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <button class="btn btn-secondary btn-sm" @click="editPowerSensor(idx)">Edit</button>
+              <button class="btn btn-danger btn-sm" @click="deletePowerSensor(idx)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: Power Groups -->
+      <section v-if="activeTab === 'groups'">
+        <div class="toolbar">
+          <h2>Power Groups ({{ groupSensors.length }})</h2>
+          <button class="btn btn-primary btn-sm" @click="openGroupModal()">
+            + Create Power Group
+          </button>
+        </div>
+
+        <div v-if="groupSensors.length === 0" class="empty-state">
+          <h3>No power groups configured</h3>
+          <p>Group multiple power sensors together (e.g. "All Lights Power") to monitor aggregate load on the Energy Dashboard.</p>
+        </div>
+
+        <div v-else class="cards-grid">
+          <div v-for="(grp, idx) in groupSensors" :key="idx" class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-icon group">🗂️</div>
+                <div>
+                  <div class="card-title">{{ grp.name }}</div>
+                  <div class="card-subtitle">sensor.{{ slugify(grp.name) }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="card-metric">
+                <span>Member Count:</span>
+                <span class="metric-val">{{ (grp.entities || []).length }} sensors</span>
+              </div>
+              <div class="card-badges" style="margin-top: 0.5rem;">
+                <span v-for="ent in (grp.entities || [])" :key="ent" class="badge">
+                  {{ ent }}
+                </span>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <button class="btn btn-secondary btn-sm" @click="openGroupModal(idx)">Edit Group</button>
+              <button class="btn btn-danger btn-sm" @click="deleteGroupSensor(idx)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: Energy Sensors -->
+      <section v-if="activeTab === 'energy'">
+        <div class="toolbar">
+          <h2>Energy Accumulators ({{ energySensors.length }})</h2>
+          <button class="btn btn-primary btn-sm" @click="openEnergyModal()">
+            + Create Energy Sensor
+          </button>
+        </div>
+
+        <div v-if="energySensors.length === 0" class="empty-state">
+          <h3>No energy sensors configured</h3>
+          <p>Energy sensors integrate power over time into cumulative kWh for the Home Assistant Energy dashboard.</p>
+        </div>
+
+        <div v-else class="cards-grid">
+          <div v-for="(es, idx) in energySensors" :key="idx" class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <div class="card-icon energy">📈</div>
+                <div>
+                  <div class="card-title">{{ es.name }}</div>
+                  <div class="card-subtitle">sensor.{{ slugify(es.name) }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="card-metric">
+                <span>Source Power Sensor:</span>
+                <span class="metric-val" style="font-size: 0.8rem; font-family: monospace;">{{ es.power_sensor }}</span>
+              </div>
+              <div class="card-metric">
+                <span>Algorithm:</span>
+                <span class="metric-val">{{ es.integration_method || 'trapezoidal' }} Riemann sum</span>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <button class="btn btn-secondary btn-sm" @click="openEnergyModal(idx)">Edit</button>
+              <button class="btn btn-danger btn-sm" @click="deleteEnergySensor(idx)">Delete</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: Raw YAML -->
+      <section v-if="activeTab === 'yaml'">
+        <div class="toolbar">
+          <h2>Configuration YAML Preview</h2>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-secondary btn-sm" @click="copyYaml">Copy YAML</button>
+            <button class="btn btn-secondary btn-sm" @click="downloadYaml">Download YAML</button>
+          </div>
+        </div>
+        <textarea class="form-control" style="font-family: monospace; height: 450px; font-size: 0.9rem;" v-model="rawYamlPreview" @input="onYamlEdited"></textarea>
+      </section>
+
+    </main>
+
+    <!-- MODAL: Add / Edit Power Tracking for an Entity -->
+    <div v-if="showTrackModal" class="modal-overlay" @click.self="showTrackModal = false">
+      <div class="modal-content" style="max-width: 680px;">
+        <div class="modal-header">
+          <h2>⚡ {{ isEditingExisting ? 'Edit Power Tracking' : 'Add Power Tracking' }}</h2>
+          <button class="close-btn" @click="showTrackModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          
+          <div class="mode-toggle">
+            <button class="mode-btn" :class="{ active: trackForm.mode === 'simple' }" @click="trackForm.mode = 'simple'">
+              💡 Simple / Dimmer Mode
+            </button>
+            <button class="mode-btn" :class="{ active: trackForm.mode === 'rules' }" @click="trackForm.mode = 'rules'">
+              🎛️ Multi-State / Climate Rules
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label>Sensor Name</label>
+            <input type="text" class="form-control" v-model="trackForm.name" required>
+            <span class="form-hint">Entity ID in HA will be sensor.{{ slugify(trackForm.name || '') }}</span>
+          </div>
+
+          <div class="form-group">
+            <label>Target Home Assistant Entity</label>
+            <input type="text" class="form-control" v-model="trackForm.entity_id" required>
+          </div>
+
+          <!-- MODE A: Simple / Dimmer -->
+          <div v-if="trackForm.mode === 'simple'">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Rated Power (Watts)</label>
+                <input type="number" step="0.1" min="0" class="form-control" v-model.number="trackForm.power" required>
+                <span class="form-hint">Power draw when 100% active.</span>
+              </div>
+              <div class="form-group">
+                <label>Min Power (Watts)</label>
+                <input type="number" step="0.1" min="0" class="form-control" v-model.number="trackForm.min_power">
+                <span class="form-hint">Power at 1% dim level.</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Standby Power (Watts)</label>
+                <input type="number" step="0.1" min="0" class="form-control" v-model.number="trackForm.standby_power">
+                <span class="form-hint">Power draw when switched off.</span>
+              </div>
+              <div class="form-group">
+                <label>Power Variance (± Watts)</label>
+                <input type="number" step="0.1" min="0" class="form-control" v-model.number="trackForm.variance">
+                <span class="form-hint">Optional random jitter for realism.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- MODE B: State & Attribute Rules (Climate, Multistage, etc.) -->
+          <div v-if="trackForm.mode === 'rules'">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Fallback / Standby Power (Watts)</label>
+                <input type="number" step="0.1" min="0" class="form-control" v-model.number="trackForm.standby_power">
+                <span class="form-hint">Watts if no state rules match.</span>
+              </div>
+              <div class="form-group">
+                <label>Power Variance (± Watts)</label>
+                <input type="number" step="0.1" min="0" class="form-control" v-model.number="trackForm.variance">
+                <span class="form-hint">Realistic fluctuation when running.</span>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                <label>State & Attribute Rules (Evaluated Top-to-Bottom)</label>
+                <button class="btn btn-secondary btn-sm" @click="addRule">+ Add Rule</button>
+              </div>
+
+              <div v-if="trackForm.states.length === 0" style="padding: 1.5rem; text-align: center; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.85rem;">
+                No rules defined yet. Click <strong>+ Add Rule</strong> to match attributes (e.g. auxHeat, equipment_running, heatPump) to power levels.
+              </div>
+
+              <div v-else class="rules-container">
+                <div v-for="(rule, rIdx) in trackForm.states" :key="rIdx" class="rule-row">
+                  <div>
+                    <input type="text" class="form-control form-control-sm" list="attrList" v-model="rule.attribute" placeholder="Attribute (or blank for state)">
+                  </div>
+                  <div>
+                    <select class="form-control form-control-sm" v-model="rule.condition">
+                      <option value="contains">contains</option>
+                      <option value="equals">equals</option>
+                    </select>
+                  </div>
+                  <div>
+                    <input type="text" class="form-control form-control-sm" v-model="rule.value" placeholder="e.g. heatPump, on">
+                  </div>
+                  <div>
+                    <input type="number" step="1" min="0" class="form-control form-control-sm" v-model.number="rule.power" placeholder="Watts">
+                  </div>
+                  <div class="rule-actions">
+                    <button class="rule-btn" :disabled="rIdx === 0" @click="moveRuleUp(rIdx)" title="Move Up">↑</button>
+                    <button class="rule-btn" :disabled="rIdx === trackForm.states.length - 1" @click="moveRuleDown(rIdx)" title="Move Down">↓</button>
+                    <button class="rule-btn danger" @click="deleteRule(rIdx)" title="Delete">&times;</button>
+                  </div>
+                </div>
+              </div>
+
+              <datalist id="attrList">
+                <option v-for="attr in currentEntityAttributes" :key="attr" :value="attr"></option>
+                <option value="equipment_running"></option>
+                <option value="aux_heat"></option>
+                <option value="fan"></option>
+                <option value="hvac_action"></option>
+                <option value="preset_mode"></option>
+              </datalist>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top: 0.5rem;">
+            <label class="form-check">
+              <input type="checkbox" v-model="trackForm.link_device">
+              <span>Link to HA Device card</span>
+            </label>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid var(--border-color); margin: 0.5rem 0;">
+
+          <!-- Companion Energy & Group options (when creating new) -->
+          <div v-if="!isEditingExisting" style="display: flex; flex-direction: column; gap: 0.75rem;">
+            <label class="form-check">
+              <input type="checkbox" v-model="trackForm.create_energy">
+              <span><strong>Auto-create Companion Energy Sensor (kWh)</strong> for Energy Dashboard</span>
+            </label>
+
+            <div class="form-group">
+              <label>Assign to Power Group (Optional)</label>
+              <select class="form-control" v-model="trackForm.target_group">
+                <option value="">-- Do not add to group --</option>
+                <option v-for="g in groupSensors" :key="g.name" :value="g.name">{{ g.name }}</option>
+                <option value="__NEW__">+ Create New Group...</option>
+              </select>
+            </div>
+
+            <div v-if="trackForm.target_group === '__NEW__'" class="form-group">
+              <label>New Group Name</label>
+              <input type="text" class="form-control" v-model="trackForm.new_group_name" placeholder="e.g. All Lights Power Group">
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showTrackModal = false">Cancel</button>
+          <button class="btn btn-success" @click="saveTrackForm">Save Power Sensor</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Group Modal -->
+    <div v-if="showGroupModal" class="modal-overlay" @click.self="showGroupModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>🗂️ {{ editingGroupIndex !== null ? 'Edit Power Group' : 'Create Power Group' }}</h2>
+          <button class="close-btn" @click="showGroupModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Group Name</label>
+            <input type="text" class="form-control" v-model="groupForm.name" placeholder="e.g. All Lights Power Group" required>
+          </div>
+
+          <div class="form-group">
+            <label>Select Member Power Sensors</label>
+            <div style="max-height: 220px; overflow-y: auto; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem;">
+              <div v-for="ps in powerSensors" :key="ps.name" style="margin-bottom: 0.5rem;">
+                <label class="form-check">
+                  <input type="checkbox" :value="'sensor.' + slugify(ps.name)" v-model="groupForm.entities">
+                  <span>{{ ps.name }} (sensor.{{ slugify(ps.name) }})</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <label class="form-check" v-if="editingGroupIndex === null">
+            <input type="checkbox" v-model="groupForm.create_energy_group">
+            <span><strong>Auto-create Companion Energy Group (kWh)</strong> for this group</span>
+          </label>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showGroupModal = false">Cancel</button>
+          <button class="btn btn-success" @click="saveGroupForm">Save Group</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Energy Modal -->
+    <div v-if="showEnergyModal" class="modal-overlay" @click.self="showEnergyModal = false">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>📈 {{ editingEnergyIndex !== null ? 'Edit Energy Sensor' : 'Create Energy Sensor' }}</h2>
+          <button class="close-btn" @click="showEnergyModal = false">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Energy Sensor Name</label>
+            <input type="text" class="form-control" v-model="energyForm.name" required>
+          </div>
+
+          <div class="form-group">
+            <label>Target Power Sensor Entity ID</label>
+            <input type="text" class="form-control" v-model="energyForm.power_sensor" placeholder="e.g. sensor.dining_room_lights_power" required>
+          </div>
+
+          <div class="form-group">
+            <label>Integration Method</label>
+            <select class="form-control" v-model="energyForm.integration_method">
+              <option value="trapezoidal">Trapezoidal Riemann Sum (Recommended)</option>
+              <option value="left">Left-point Riemann Sum</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="showEnergyModal = false">Cancel</button>
+          <button class="btn btn-success" @click="saveEnergyForm">Save Energy Sensor</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div v-if="toast" class="toast" :class="toast.type">
+      <span>{{ toast.message }}</span>
+    </div>
+
+  </div>
+{% endraw %}
+
+  <script>
+    window.INITIAL_DATA = {
+      callbackUrl: {{ callback_url | tojson }},
+      token: {{ token | tojson }},
+      groupName: {{ group_name | tojson }},
+      initialYaml: {{ initial_yaml | tojson }},
+      candidateEntities: {{ candidate_entities | tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

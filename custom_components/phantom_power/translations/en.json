@@ -1,0 +1,45 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Phantom Power Configuration",
+        "description": "Configure Phantom Power to fake power and energy consumption for your devices.",
+        "data": {
+          "file_name": "Configuration File Path",
+          "editor_url": "Editor URL"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Phantom Power is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Phantom Power Options",
+        "description": "Click the link below to open the visual editor in a new tab:\n\n[**Open Phantom Power Editor**]({builder_url})\n\nConfiguration file: `{file_name}`\n\nWhen done making changes, click **Save & Sync to Home Assistant** in the editor, then click **Submit** below to close this dialog.",
+        "data": {
+          "file_name": "Configuration File Path",
+          "editor_url": "Editor URL"
+        }
+      }
+    }
+  },
+  "services": {
+    "reload": {
+      "name": "Reload",
+      "description": "Reloads the Phantom Power YAML file without restarting Home Assistant."
+    },
+    "reset_energy": {
+      "name": "Reset Energy",
+      "description": "Resets the accumulated energy (kWh) of a Phantom Energy sensor.",
+      "fields": {
+        "value": {
+          "name": "Reset Value",
+          "description": "The initial value in kWh to set the accumulator to (defaults to 0.0)."
+        }
+      }
+    }
+  }
+}

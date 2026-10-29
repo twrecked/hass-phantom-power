@@ -1,0 +1,102 @@
+# Phantom Power Configuration Example
+# Place in /config/phantom_power.yaml or include in configuration.yaml
+
+phantom_power:
+  # ------------------------------------------------------------------
+  # 1. Power Sensors: associate wattage with any entity
+  # ------------------------------------------------------------------
+  power_sensors:
+    # Dimmable light: adjusts power based on brightness (0-255)
+    - name: "Dining Room Lights Power"
+      entity_id: light.dining_room
+      power: 12.0             # Rated wattage at 100% brightness
+      min_power: 1.0          # Minimum wattage when dimmed to 1%
+      standby_power: 0.0      # Wattage when switched off
+      link_device: true       # Attach to the dining room light device in HA
+
+    # Additional light for group demo
+    - name: "Kitchen Lights Power"
+      entity_id: light.kitchen_ceiling
+      power: 28.0
+      min_power: 3.0
+      standby_power: 0.0
+      link_device: true
+
+    # Switch with idle standby power draw
+    - name: "Coffee Maker Power"
+      entity_id: switch.coffee_maker
+      power: 1250.0           # Active brewing wattage
+      standby_power: 1.8      # Clock / standby circuit draw when switch is off
+      link_device: true
+
+    # Ceiling fan: scales wattage linearly with percentage speed (0-100%)
+    - name: "Living Room Fan Power"
+      entity_id: fan.living_room_fan
+      power: 65.0             # High speed wattage
+      min_power: 12.0         # Low speed wattage
+      standby_power: 0.5
+      link_device: true
+
+    # Complex multi-stage device: Thermostat / Heat Pump with attribute matching
+    - name: "Main Thermostat Power"
+      entity_id: climate.main_thermostat
+      standby_power: 0.0      # Wattage when idling or off
+      variance: 25.0          # ±25W random jitter to look authentic
+      link_device: true
+      states:
+        # Evaluated top-to-bottom (case-insensitive substring or value check)
+        - attribute: aux_heat
+          value: "on"
+          power: 11000.0
+
+        - attribute: equipment_running
+          contains: "auxHeat1"
+          power: 16000.0
+
+        - attribute: equipment_running
+          contains: "heatPump2"
+          power: 3000.0
+
+        - attribute: equipment_running
+          contains: "compCool2"
+          power: 2500.0
+
+        - attribute: equipment_running
+          contains: "compCool1"
+          power: 2000.0
+
+        - attribute: equipment_running
+          contains: "heatPump"
+          power: 2000.0
+
+        - attribute: fan
+          value: "on"
+          power: 50.0
+
+  # ------------------------------------------------------------------
+  # 2. Power Groups: sum multiple power sensors into a total wattage
+  # ------------------------------------------------------------------
+  group_sensors:
+    - name: "All Lights Power Group"
+      entities:
+        - sensor.dining_room_lights_power
+        - sensor.kitchen_lights_power
+
+  # ------------------------------------------------------------------
+  # 3. Energy Sensors: integrate power into accumulating kWh for Energy Tab
+  # ------------------------------------------------------------------
+  energy_sensors:
+    # Individual device energy tracking
+    - name: "Dining Room Lights Energy"
+      power_sensor: sensor.dining_room_lights_power
+      integration_method: trapezoidal
+
+    # Whole-group energy tracking for Home Assistant Energy Dashboard
+    - name: "All Lights Energy Group"
+      power_sensor: sensor.all_lights_power_group
+      integration_method: trapezoidal
+
+    # HVAC energy tracking
+    - name: "Main Thermostat Energy"
+      power_sensor: sensor.main_thermostat_power
+      integration_method: trapezoidal

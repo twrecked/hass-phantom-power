@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+venv-*/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*~
+.*.sw?
+*.bak
+prompt.md*

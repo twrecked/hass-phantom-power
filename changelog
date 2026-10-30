@@ -13,6 +13,7 @@
   * Added climate and vacuum entity discovery to config flow and visual editor.
   * Added interactive state rule builder to Phantom Power Editor.
   * Added visual web editor in phantom-power-editor/ with automatic entity discovery, one-click power/energy generation, group management, and Home Assistant webhook synchronization.
+  * Updated project license to GNU Lesser General Public License v3.0 (LGPL-3.0).
   * Added Google App Engine deployment configuration (app.yaml) and configured hosted editor URL as default in const.py.
   * Added webhook integration to custom_components/phantom_power.
   * Added install script, HACS metadata, example configurations, and release notes.

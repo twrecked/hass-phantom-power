@@ -2,7 +2,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/default)
 [![Version](https://img.shields.io/badge/version-v0.1.0--alpha.1-blue.svg)](docs/RELEASE_NOTES_v0.1.0-alpha.1.md)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: LGPL-3.0](https://img.shields.io/badge/License-LGPL--3.0-blue.svg)](LICENSE)
 
 **Phantom Power** is a Home Assistant custom component that generates synthetic power (Watts) and cumulative energy (kWh) tracking for devices that do not report their own power usage (dumb switches, dimmers, fans, appliances, and smart plugs).
 
@@ -241,4 +241,4 @@ To track phantom devices on the Home Assistant Energy tab:
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+This project is licensed under the GNU Lesser General Public License v3.0 (LGPL-3.0).

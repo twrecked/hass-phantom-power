@@ -25,8 +25,22 @@ Instead of setting up cumbersome template sensors and manually juggling Riemann 
   - Combines multiple power sensors into a unified load reading in Watts.
   - Can feed directly into a Phantom Energy sensor to monitor categories (e.g., *All Lights*, *Entertainment Center*, *Kitchen Appliances*).
   - Diagnostic attributes show individual member wattage breakdown and active device counts.
+- **🎛️ Multi-State & Climate Rules (`states`)**:
+  - Match operational stages or attributes (e.g., `equipment_running`, `aux_heat`, `fan`, `preset_mode`) to wattage levels.
+  - Realistic jitter/noise simulation (`variance`) to model authentic electrical fluctuations.
 - **🔄 Hot Configuration Reload**:
   - Reload YAML configuration on-the-fly with the `phantom_power.reload` service—no Home Assistant restart required.
+
+---
+
+## 🌐 Visual Web Editor
+
+Phantom Power includes an interactive visual web editor to inspect your existing Home Assistant devices, configure power tracking with one click, build multi-state rules, and manage aggregate groups:
+
+- **Hosted Cloud Builder:** Live on Google App Engine at **[https://phantom-power-dot-twrecked-tools.nn.r.appspot.com](https://phantom-power-dot-twrecked-tools.nn.r.appspot.com)**.
+- **One-Click Sync via Home Assistant:** In Home Assistant, go to **Settings -> Devices & Services -> Phantom Power -> Configure**. Click **Open Phantom Power Editor** to launch the editor with your existing candidate devices and current configuration pre-loaded. Click **Save & Sync to Home Assistant**, and the editor automatically updates your file on disk and reloads the integration via an authenticated webhook.
+- **Local & Offline Mode:** Prefer zero data leaving your local network? Run the editor locally with `python main.py` in the `phantom-power-editor/` folder, and set the **Editor URL** in Home Assistant to `http://localhost:8088` (or your LAN IP).
+- **Manual Export & Import:** Full support for copying YAML to your clipboard, downloading the file, or pasting existing YAML directly into the editor.
 
 ---
 

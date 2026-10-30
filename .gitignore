@@ -17,3 +17,11 @@ venv-*/
 .*.sw?
 *.bak
 prompt.md*
+
+# Archive & temporary files
+*.tar.gz
+*.tgz
+update-repo
+phantom-power-editor/.gcloudignore
+google-cloud-sdk/
+AGENTS*.md

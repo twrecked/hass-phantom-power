@@ -40,7 +40,7 @@ CONF_UNIQUE_ID = "unique_id"
 ATTR_UNIQUE_ID = "unique_id"
 CONF_FILE_NAME = "file_name"
 CONF_EDITOR_URL = "editor_url"
-DEFAULT_EDITOR_URL = "http://localhost:8088"
+DEFAULT_EDITOR_URL = "https://phantom-power-dot-twrecked-tools.nn.r.appspot.com"
 
 # Integration methods
 INTEGRATION_METHOD_TRAPEZOIDAL = "trapezoidal"

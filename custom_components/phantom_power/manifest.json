@@ -5,11 +5,11 @@
     "@twrecked"
   ],
   "config_flow": true,
+  "dependencies": [
+    "webhook"
+  ],
   "documentation": "https://github.com/twrecked/hass-phantom-power/blob/main/README.md",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/twrecked/hass-phantom-power/issues",
-  "version": "0.1.0-alpha.1",
-  "dependencies": [
-    "webhook"
-  ]
+  "version": "0.1.0-alpha.1"
 }

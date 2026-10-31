@@ -4,6 +4,32 @@
 
 const { createApp, ref, computed, onMounted, watch } = Vue;
 
+
+function decodeHashData(hashData) {
+  try {
+    const binary = atob(hashData);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    // Check for zlib header (0x78) and inflate using pako if available
+    if (typeof pako !== "undefined" && bytes.length > 2 && bytes[0] === 0x78) {
+      try {
+        return pako.inflate(bytes, { to: "string" });
+      } catch (err) {
+        console.warn("pako inflate failed, trying fallback:", err);
+      }
+    }
+
+    // Fallback: UTF-8 TextDecoder for uncompressed base64
+    return new TextDecoder("utf-8").decode(bytes);
+  } catch (err) {
+    console.error("decodeHashData error:", err);
+    return "";
+  }
+}
+
 function slugify(text) {
   if (!text) return "";
   return text
@@ -84,19 +110,29 @@ createApp({
     onMounted(() => {
       let initialYaml = window.INITIAL_DATA?.initialYaml || "";
 
-      // Inspect URL hash for #data=...
-      if (window.location.hash.startsWith("#data=")) {
+      // Inspect URL hash for data payload (e.g. #data=... or #...&data=...)
+      const hash = window.location.hash.substring(1);
+      let hashData = "";
+      if (hash.startsWith("data=")) {
+        hashData = hash.substring(5);
+      } else {
+        const params = new URLSearchParams(hash);
+        hashData = params.get("data") || "";
+      }
+
+      if (hashData) {
         try {
-          const hashData = window.location.hash.substring(6);
-          const raw = atob(hashData);
-          try {
-            const parsed = JSON.parse(raw);
-            if (parsed.yaml) initialYaml = parsed.yaml;
-            if (parsed.entities && parsed.entities.length > 0) {
-              candidateEntities.value = parsed.entities;
+          const decoded = decodeHashData(hashData);
+          if (decoded) {
+            try {
+              const parsed = JSON.parse(decoded);
+              if (parsed.yaml) initialYaml = parsed.yaml;
+              if (parsed.entities && parsed.entities.length > 0) {
+                candidateEntities.value = parsed.entities;
+              }
+            } catch {
+              initialYaml = decoded;
             }
-          } catch {
-            initialYaml = raw;
           }
         } catch (err) {
           console.warn("Could not decode hash data:", err);

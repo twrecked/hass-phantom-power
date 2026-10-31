@@ -1,21 +1,16 @@
-2026-10-28  Steve
-  * Version 0.1.0-alpha.1
-  * Initial alpha release of Phantom Power.
-  * Added PhantomPowerSensor with linear dimmer and fan speed scaling.
-  * Added configurable device registry linking (link_device).
-  * Added PhantomEnergySensor with continuous Riemann sum power-to-kWh integration and persistent state restoration.
-  * Added PhantomPowerGroupSensor for multi-entity wattage summation and diagnostics.
-  * Added YAML configuration loader with hot-reload service (phantom_power.reload).
-  * Added reset service (phantom_power.reset_energy).
-  * Added DEFAULT_POWER import to cfg.py.
-  * Added multi-state and attribute rule matching (states) on power sensors with case-insensitive value and contains operators.
-  * Added realistic power variance jitter (variance) to synthesize natural electrical fluctuations.
-  * Added climate and vacuum entity discovery to config flow and visual editor.
-  * Added interactive state rule builder to Phantom Power Editor.
-  * Added visual web editor in phantom-power-editor/ with automatic entity discovery, one-click power/energy generation, group management, and Home Assistant webhook synchronization.
-  * Fixed zlib payload decompression in Phantom Power Editor using pako.
-  * Added Probatio schema validation engine support with automatic voluptuous fallback.
-  * Updated project license to GNU Lesser General Public License v3.0 (LGPL-3.0).
-  * Added Google App Engine deployment configuration (app.yaml) and configured hosted editor URL as default in const.py.
-  * Added webhook integration to custom_components/phantom_power.
-  * Added install script, HACS metadata, example configurations, and release notes.
+0.1.0-alpha.1:
+  Initial alpha release of Phantom Power.
+  Add PhantomPowerSensor with linear dimmer and fan speed scaling.
+  Support configurable device registry linking (link_device).
+  Add multi-state and attribute rule matching (states) on power sensors with case-insensitive value and contains operators.
+  Add realistic power variance jitter (variance) to synthesize natural electrical fluctuations.
+  Add PhantomEnergySensor with continuous Riemann sum power-to-kWh integration and persistent state restoration.
+  Add PhantomPowerGroupSensor for multi-entity wattage summation and diagnostics.
+  Add YAML configuration loader with hot-reload service (phantom_power.reload).
+  Add reset service (phantom_power.reset_energy).
+  Add Probatio schema validation engine support with automatic voluptuous fallback.
+  Add visual web editor in phantom-power-editor/ with automatic entity discovery, one-click power/energy generation, group management, and Home Assistant webhook synchronization.
+  Add Google App Engine deployment configuration (app.yaml) and configure hosted editor URL as default in const.py.
+  Fix zlib payload decompression in Phantom Power Editor using pako.
+  License under GNU Lesser General Public License v3.0 (LGPL-3.0).
+  Add install script, HACS metadata, example configurations, and release notes.

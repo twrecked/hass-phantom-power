@@ -1,0 +1,29 @@
+#!/bin/bash
+# Publish a release to GitHub using gh CLI
+
+set -e
+
+VERSION="${1:-v0.1.0-alpha.1}"
+
+# Ensure leading 'v' in tag
+if [[ "${VERSION}" != v* ]]; then
+    TAG="v${VERSION}"
+else
+    TAG="${VERSION}"
+fi
+
+TITLE_VER="${TAG#v}"
+NOTES_FILE="docs/RELEASE_NOTES_${TAG}.md"
+
+if [[ ! -f "${NOTES_FILE}" ]]; then
+    echo "Error: Release notes file '${NOTES_FILE}' not found."
+    exit 1
+fi
+
+echo "Publishing ${TAG} to GitHub..."
+env -u GH_TOKEN gh release create "${TAG}" \
+  --title "version ${TITLE_VER}" \
+  --notes-file "${NOTES_FILE}" \
+  --prerelease
+
+echo "Successfully published ${TAG}!"

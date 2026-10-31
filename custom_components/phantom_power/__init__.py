@@ -5,7 +5,10 @@ import logging
 import secrets
 from typing import Any
 from aiohttp import web
-import voluptuous as vol
+try:
+    import probatio as vol
+except ImportError:
+    import voluptuous as vol
 import yaml
 
 from homeassistant.components import webhook

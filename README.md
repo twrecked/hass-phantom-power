@@ -136,6 +136,8 @@ phantom_power:
 | `power` | float | **Required** | The rated power draw in Watts when active / 100% on. |
 | `min_power` | float | `0.0` | Minimum power draw in Watts when dimmed or set to lowest speed. |
 | `standby_power` | float | `0.0` | Power draw in Watts when the entity is `off` or idling. |
+| `variance` | float | `0.0` | Optional random jitter (±W) applied to active power for realistic fluctuation. |
+| `states` | list | `[]` | Optional list of multi-stage/attribute rules (see below). |
 | `link_device` | boolean | `true` | When `true`, links this power sensor to the target entity's device in the Device Registry. |
 | `unique_id` | string | *auto* | Optional unique ID for entity registry customization. |
 

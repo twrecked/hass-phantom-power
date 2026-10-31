@@ -8,7 +8,10 @@ import os
 from typing import Any
 from urllib.parse import quote
 import zlib
-import voluptuous as vol
+try:
+    import probatio as vol
+except ImportError:
+    import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.components import webhook

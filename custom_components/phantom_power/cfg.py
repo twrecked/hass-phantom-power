@@ -4,7 +4,10 @@ from __future__ import annotations
 import logging
 import os
 from typing import Any
-import voluptuous as vol
+try:
+    import probatio as vol
+except ImportError:
+    import voluptuous as vol
 
 from homeassistant.const import (
     ATTR_ENTITY_ID,

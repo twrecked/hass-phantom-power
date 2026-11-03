@@ -17,6 +17,7 @@ from homeassistant import config_entries
 from homeassistant.components import webhook
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers import entity_registry as er
 
 from .const import (
     COMPONENT_DOMAIN,
@@ -135,16 +136,25 @@ class PhantomPowerOptionsFlowHandler(config_entries.OptionsFlow):
             yaml_content = ""
 
         # 2. Collect candidate entities from Home Assistant state machine
+        ent_reg = er.async_get(self.hass)
         candidate_entities: list[dict[str, Any]] = []
         for state in self.hass.states.async_all():
             domain = state.domain
             if domain in ("light", "switch", "fan", "media_player", "climate", "vacuum"):
                 # Collect relevant attribute keys
                 attrs = [k for k in state.attributes.keys() if k not in ("friendly_name", "icon", "supported_features", "entity_picture")]
+                display_name = state.attributes.get("friendly_name", state.entity_id)
+                reg_entry = ent_reg.async_get(state.entity_id)
+                if reg_entry:
+                    if reg_entry.has_entity_name and reg_entry.original_name:
+                        display_name = reg_entry.original_name
+                    elif reg_entry.name:
+                        display_name = reg_entry.name
+
                 candidate_entities.append(
                     {
                         "entity_id": state.entity_id,
-                        "name": state.attributes.get("friendly_name", state.entity_id),
+                        "name": display_name,
                         "domain": domain,
                         "is_dimmable": domain == "light"
                         or (domain == "fan" and "percentage" in state.attributes),

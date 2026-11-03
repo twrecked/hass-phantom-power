@@ -94,6 +94,7 @@ ENERGY_SENSOR_SCHEMA = vol.Schema(
         vol.Optional(
             CONF_INTEGRATION_METHOD, default=DEFAULT_INTEGRATION_METHOD
         ): vol.In([INTEGRATION_METHOD_TRAPEZOIDAL, INTEGRATION_METHOD_LEFT]),
+        vol.Optional(CONF_LINK_DEVICE, default=DEFAULT_LINK_DEVICE): cv.boolean,
         vol.Optional(CONF_UNIQUE_ID): cv.string,
     }
 )

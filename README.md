@@ -207,6 +207,7 @@ phantom_power:
 | `power_sensor` | string | **Required** | Entity ID of the power sensor to integrate (Watts or kW). |
 | `integration_method` | string | `trapezoidal` | Integration algorithm: `trapezoidal` or `left`. |
 | `initial_value` | float | `0.0` | Initial starting value in kWh. |
+| `link_device` | boolean | `true` | When `true`, links this energy sensor to the power sensor's device in the Device Registry. |
 | `unique_id` | string | *auto* | Optional unique ID. |
 
 ---

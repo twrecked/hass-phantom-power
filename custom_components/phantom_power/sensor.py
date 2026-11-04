@@ -211,6 +211,16 @@ class PhantomPowerSensor(RestoreEntity, SensorEntity):
                     ent_reg.async_update_entity(
                         self.entity_id, device_id=source_entry.device_id
                     )
+                # Link downstream energy sensors if already registered
+                energy_registry = (
+                    self.hass.data.get(COMPONENT_DOMAIN, {}).get("energy_sensors", {})
+                )
+                for e_sensor in energy_registry.values():
+                    if (
+                        getattr(e_sensor, "_source_power_sensor", None) == self.entity_id
+                        and getattr(e_sensor, "_link_device", False)
+                    ):
+                        e_sensor._async_link_to_source_device()
         except Exception as err:
             _LOGGER.debug("Could not link device for %s: %s", self.entity_id, err)
 
@@ -333,6 +343,7 @@ class PhantomEnergySensor(RestoreEntity, SensorEntity):
         self._integration_method = config.get(
             CONF_INTEGRATION_METHOD, DEFAULT_INTEGRATION_METHOD
         )
+        self._link_device = config.get(CONF_LINK_DEVICE, DEFAULT_LINK_DEVICE)
 
         self._energy_accumulator = float(
             config.get(CONF_INITIAL_VALUE, DEFAULT_INITIAL_VALUE)
@@ -376,6 +387,12 @@ class PhantomEnergySensor(RestoreEntity, SensorEntity):
 
         @callback
         def _on_power_state_change(event: Event) -> None:
+            if self._link_device:
+                ent_reg = er.async_get(self.hass)
+                my_entry = ent_reg.async_get(self.entity_id)
+                if my_entry and not my_entry.device_id:
+                    self._async_link_to_source_device()
+
             new_st = event.data.get("new_state")
             if new_st is None or new_st.state in (STATE_UNAVAILABLE, STATE_UNKNOWN):
                 return
@@ -391,6 +408,10 @@ class PhantomEnergySensor(RestoreEntity, SensorEntity):
 
         # Register in energy sensor registry for reset service
         self.hass.data.setdefault(COMPONENT_DOMAIN, {}).setdefault("energy_sensors", {})[self.entity_id] = self
+
+        # Link to target device if requested
+        if self._link_device:
+            self._async_link_to_source_device()
 
         self._unsub_interval = async_track_time_interval(
             self.hass,
@@ -450,6 +471,27 @@ class PhantomEnergySensor(RestoreEntity, SensorEntity):
         self._attr_native_value = round(self._energy_accumulator, 4)
         self._attr_extra_state_attributes[ATTR_LAST_CALC_TIME] = now.isoformat()
         self.async_write_ha_state()
+
+    @callback
+    def _async_link_to_source_device(self) -> None:
+        """Link this energy sensor to the device of the source power sensor."""
+        try:
+            ent_reg = er.async_get(self.hass)
+            source_entry = ent_reg.async_get(self._source_power_sensor)
+            if source_entry and source_entry.device_id:
+                my_entry = ent_reg.async_get(self.entity_id)
+                if my_entry and my_entry.device_id != source_entry.device_id:
+                    _LOGGER.info(
+                        "Linking energy sensor %s to device %s of source %s",
+                        self.entity_id,
+                        source_entry.device_id,
+                        self._source_power_sensor,
+                    )
+                    ent_reg.async_update_entity(
+                        self.entity_id, device_id=source_entry.device_id
+                    )
+        except Exception as err:
+            _LOGGER.debug("Could not link device for %s: %s", self.entity_id, err)
 
     @callback
     def async_reset_energy(self, value: float = 0.0) -> None:

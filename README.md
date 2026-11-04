@@ -1,7 +1,7 @@
 # ⚡ Phantom Power for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/default)
-[![Version](https://img.shields.io/badge/version-v0.1.0--alpha.1-blue.svg)](docs/RELEASE_NOTES_v0.1.0-alpha.1.md)
+[![Version](https://img.shields.io/badge/version-v0.1.0--alpha.2-blue.svg)](docs/RELEASE_NOTES_v0.1.0-alpha.2.md)
 [![License: LGPL-3.0](https://img.shields.io/badge/License-LGPL--3.0-blue.svg)](LICENSE)
 
 **Phantom Power** is a Home Assistant custom component that generates synthetic power (Watts) and cumulative energy (kWh) tracking for devices that do not report their own power usage (dumb switches, dimmers, fans, appliances, and smart plugs).
@@ -207,6 +207,7 @@ phantom_power:
 | `power_sensor` | string | **Required** | Entity ID of the power sensor to integrate (Watts or kW). |
 | `integration_method` | string | `trapezoidal` | Integration algorithm: `trapezoidal` or `left`. |
 | `initial_value` | float | `0.0` | Initial starting value in kWh. |
+| `link_device` | boolean | `true` | When `true`, links this energy sensor to the power sensor's device in the Device Registry. |
 | `unique_id` | string | *auto* | Optional unique ID. |
 
 ---

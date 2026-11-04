@@ -1,3 +1,9 @@
+0.1.0-alpha.2:
+  Add device registry linking (link_device) support for PhantomEnergySensor.
+  Prevent entity name stuttering in config flow editor candidate discovery using entity registry has_entity_name.
+  Relocate install and publish-release helper scripts into scripts/ directory.
+  Add Hassfest and HACS GitHub Actions CI verification workflows.
+
 0.1.0-alpha.1:
   Initial alpha release of Phantom Power.
   Add PhantomPowerSensor with linear dimmer and fan speed scaling.
